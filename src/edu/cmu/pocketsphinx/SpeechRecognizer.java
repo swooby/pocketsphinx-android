@@ -239,12 +239,12 @@ public class SpeechRecognizer {
         private int timeoutMillis;
         private final static int NO_TIMEOUT = -1;
 
-        public RecognizerThread(int timeoutMillis) {
-            this.timeoutMillis = timeoutMillis;
-        }
-
         public RecognizerThread() {
             this(NO_TIMEOUT);
+        }
+
+        public RecognizerThread(int timeoutMillis) {
+            this.timeoutMillis = timeoutMillis;
         }
 
         @Override
@@ -259,7 +259,7 @@ public class SpeechRecognizer {
             short[] buffer = new short[BUFFER_SIZE];
             boolean inSpeech = decoder.getInSpeech();
 
-            long timeStopMillis = 0;
+            long timeStopMillis = -1;
             if (timeoutMillis != NO_TIMEOUT) {
                 timeStopMillis = System.currentTimeMillis() + timeoutMillis;
             }
@@ -283,7 +283,7 @@ public class SpeechRecognizer {
                     mainHandler.post(new ResultEvent(hypothesis, false));
                 }
 
-                if (timeoutMillis != NO_TIMEOUT //
+                if (timeoutMillis != -1 //
                         && System.currentTimeMillis() > timeStopMillis) {
                     timedout = true;
                 }
