@@ -119,7 +119,7 @@ public class SpeechRecognizer {
 
         Log.i(TAG, format("Start recognition \"%s\"", searchName));
         decoder.setSearch(searchName);
-        recognizerThread = new RecognizerThread(timeout);
+        recognizerThread = new RecognizerThread(timeout * 1000);
         recognizerThread.start();
         return true;
     }
@@ -236,17 +236,15 @@ public class SpeechRecognizer {
 
     private final class RecognizerThread extends Thread {
 
-        private int timeout;
+        private int timeoutMillis;
         private final static int NO_TIMEOUT = -1;
 
-        public RecognizerThread(int timeout) {
-            this.timeout = timeout * 2 * sampleRate / BUFFER_SIZE; // We will
-                                                                   // count
-                                                                   // buffers
+        public RecognizerThread(int timeoutMillis) {
+            this.timeoutMillis = timeoutMillis;
         }
 
         public RecognizerThread() {
-            timeout = NO_TIMEOUT;
+            this(NO_TIMEOUT);
         }
 
         @Override
@@ -261,7 +259,14 @@ public class SpeechRecognizer {
             short[] buffer = new short[BUFFER_SIZE];
             boolean inSpeech = decoder.getInSpeech();
 
-            while (!interrupted() && timeout != 0) {
+            long timeStopMillis = 0;
+            if (timeoutMillis != NO_TIMEOUT) {
+                timeStopMillis = System.currentTimeMillis() + timeoutMillis;
+            }
+
+            boolean timedout = false;
+
+            while (!interrupted() && !timedout) {
                 int nread = recorder.read(buffer, 0, buffer.length);
 
                 if (-1 == nread) {
@@ -278,8 +283,9 @@ public class SpeechRecognizer {
                     mainHandler.post(new ResultEvent(hypothesis, false));
                 }
 
-                if (timeout > 0) {
-                    timeout--;
+                if (timeoutMillis != NO_TIMEOUT //
+                        && System.currentTimeMillis() > timeStopMillis) {
+                    timedout = true;
                 }
             }
 
@@ -293,7 +299,7 @@ public class SpeechRecognizer {
             mainHandler.removeCallbacksAndMessages(null);
 
             // If we met timeout signal that speech ended
-            if (timeout == 0) {
+            if (timedout) {
                 mainHandler.post(new InSpeechChangeEvent(false));
             }
         }
