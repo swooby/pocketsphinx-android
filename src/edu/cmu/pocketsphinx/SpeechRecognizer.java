@@ -283,7 +283,7 @@ public class SpeechRecognizer {
                     mainHandler.post(new ResultEvent(hypothesis, false));
                 }
 
-                if (timeoutMillis != -1 //
+                if (timeStopMillis != -1 //
                         && System.currentTimeMillis() > timeStopMillis) {
                     timedout = true;
                 }
